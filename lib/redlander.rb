@@ -13,15 +13,17 @@ require 'redlander/statement'
 module Redlander
   class << self
 
+    RDF_WORLD = Redland.librdf_new_world
+    Redland.librdf_world_open(RDF_WORLD)
+    if Redland::jruby?
+      raptor_world_ptr = Redland.raptor_new_world_internal(Redland.raptor_version_decimal)
+      Redland.raptor_world_set_flag(raptor_world_ptr, :RAPTOR_WORLD_FLAG_URI_INTERNING, 0)
+      Redland.librdf_world_set_raptor(RDF_WORLD, raptor_world_ptr)
+    end
+
     # @api private
     def rdf_world
-      unless @rdf_world
-        @rdf_world = Redland.librdf_new_world
-        raise RedlandError, "Could not create a new RDF world" if @rdf_world.null?
-        ObjectSpace.define_finalizer(self, finalize_world(@rdf_world))
-        Redland.librdf_world_open(@rdf_world)
-      end
-      @rdf_world
+      RDF_WORLD
     end
 
 

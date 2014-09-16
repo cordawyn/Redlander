@@ -14,7 +14,7 @@ module Redlander
     def rdf_statement
       unless instance_variable_defined?(:@rdf_statement)
         @rdf_statement = case @source
-                         when FFI::Pointer
+                         when Redland::FFI::Pointer
                            @source
                          when Hash
                            # Create a new statement from nodes
@@ -40,9 +40,9 @@ module Redlander
     # @raise [NotImplementedError] if cannot create a Statement from the given source.
     # @raise [RedlandError] if it fails to create a Statement.
     def initialize(source = {})
-      # If FFI::Pointer is passed, wrap it instantly,
+      # If Redland::FFI::Pointer is passed, wrap it instantly,
       # because it can be freed outside before it is used here.
-      @source = source.is_a?(FFI::Pointer) ? wrap(source) : source
+      @source = source.is_a?(Redland::FFI::Pointer) ? wrap(source) : source
     end
 
     # Subject of the statment.
