@@ -6,7 +6,7 @@ module Redlander
     def rdf_uri
       unless instance_variable_defined?(:@rdf_uri)
         @rdf_uri = case @source
-                   when FFI::Pointer
+                   when Redland::FFI::Pointer
                      @source
                    when URI, String
                      Redland.librdf_new_uri(Redlander.rdf_world, @source.to_s)
@@ -34,7 +34,7 @@ module Redlander
     # @raise [NotImplementedError] if cannot create a Uri from the given source.
     # @raise [RedlandError] if it fails to create a Uri.
     def initialize(source)
-      @source = source.is_a?(FFI::Pointer) ? wrap(source) : source
+      @source = source.is_a?(Redland::FFI::Pointer) ? wrap(source) : source
     end
 
     def to_s

@@ -14,7 +14,7 @@ module Redlander
     def rdf_node
       unless instance_variable_defined?(:@rdf_node)
         @rdf_node = case @arg
-                    when FFI::Pointer
+                    when Redland::FFI::Pointer
                       @arg
                     when NilClass
                       Redland.librdf_new_node_from_blank_identifier(Redlander.rdf_world, @options[:blank_id])
@@ -62,9 +62,9 @@ module Redlander
     # @option options [Boolean] :resource interpret arg as URI string and create an RDF "resource".
     # @raise [RedlandError] if it fails to create a node from the given args.
     def initialize(arg = nil, options = {})
-      # If FFI::Pointer is passed, wrap it instantly,
+      # If Redland::FFI::Pointer is passed, wrap it instantly,
       # because it can be freed outside before it is used here.
-      @arg = arg.is_a?(FFI::Pointer) ? wrap(arg) : arg
+      @arg = arg.is_a?(Redland::FFI::Pointer) ? wrap(arg) : arg
       @options = options
     end
 

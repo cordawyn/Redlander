@@ -1,21 +1,92 @@
 # @api private
 # FFI bindings
 module Redland
-  # Handling FFI difference between MRI and Rubinius
-  if !defined?(RUBY_ENGINE) || RUBY_ENGINE == 'ruby'
-    require 'ffi'
-    extend FFI::Library
-    ffi_lib "rdf"
-  else
-    # TODO: This might be outdated already, check with Rubinius
-    extend FFI::Library
-    ffi_lib "librdf.so.0"
+
+  class << self
+
+    def mri?
+      defined?(RUBY_DESCRIPTION) && (/^ruby/ =~ RUBY_DESCRIPTION)
+    end
+
+    def jruby?
+      defined?(RUBY_PLATFORM) && ("java" == RUBY_PLATFORM)
+    end
+
+    def rubinius?
+      defined?(RUBY_ENGINE) && ("rbx" == RUBY_ENGINE)
+    end
+
+    # @api_private
+    # Determine FFI constant for this ruby engine.
+    def find_ffi
+      if defined?(RUBY_ENGINE) && RUBY_ENGINE == "rbx"
+        if const_defined? "::Rubinius::FFI"
+          ::Rubinius::FFI
+        elsif const_defined? "::FFI"
+          ::FFI
+        else
+          require "ffi"
+          ::FFI
+        end
+      else # mri, jruby, etc
+        require "ffi"
+        ::FFI
+      end
+    end
+
+    # @api_private
+    # Extend with the correct ffi implementation.
+    def load_ffi
+      ffi_module = Redland::find_ffi
+      extend ffi_module::Library
+      ffi_module
+    end
+
+    # @api_private
+    # Loads the librdf shared library.
+    def load_librdf
+      begin
+        ffi_lib "rdf"
+      rescue LoadError
+        ffi_lib "librdf.so.0"
+      end
+    end
+
+    # @api_private
+    # Loads the libraptor shared library.
+    def load_raptor
+      begin
+        ffi_lib "raptor2"
+      rescue LoadError
+        ffi_lib "libraptor2.so.0"
+      end
+    end
   end
+
+  # Constant holding the FFI module for this ruby engine.
+  FFI = Redland::load_ffi
+  Redland::load_raptor
+
+  # Defines raptor2 enum raptor_world_flag
+  enum :raptor_world_flag, [
+    :RAPTOR_WORLD_FLAG_LIBXML_GENERIC_ERROR_SAVE, 1,
+    :RAPTOR_WORLD_FLAG_LIBXML_STRUCTURED_ERROR_SAVE, 2,
+    :RAPTOR_WORLD_FLAG_URI_INTERNING, 3,
+    :RAPTOR_WORLD_FLAG_WWW_SKIP_INIT_FINISH, 4
+  ]
+
+  # Raptor
+  attach_variable :raptor_version_decimal, :int
+  attach_function :raptor_new_world_internal, [:int], :pointer
+  attach_function :raptor_world_set_flag, [:pointer, :raptor_world_flag, :int], :int
+
+  Redland::load_librdf
 
   # World
   attach_function :librdf_new_world, [], :pointer
   attach_function :librdf_free_world, [:pointer], :void
   attach_function :librdf_world_open, [:pointer], :void
+  attach_function :librdf_world_set_raptor, [:pointer, :pointer], :void
 
   # Storage
   attach_function :librdf_new_storage, [:pointer, :string, :string, :string], :pointer
